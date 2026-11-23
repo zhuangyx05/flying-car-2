@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tesla Roadster Rocket 全方位安全分析 | 飞行汽车技术基础 作业二</title>
+<link rel="stylesheet" href="./index_files/css2">
+<style>
+  :root{
+    --ink:#16202e; --ink-soft:#41516a; --muted:#6b7a90;
+    --line:#e2e8f0; --bg:#f5f7fb; --card:#ffffff;
+    --brand:#10394f; --brand-2:#17617f; --accent:#c8102e; --accent-soft:#fdecef;
+    --ok:#15803d; --warn:#b45309; --bad:#b91c1c;
+    --shadow:0 10px 30px rgba(16,57,79,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.75}
+  a{color:var(--brand-2);text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+
+  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:18px;height:58px;overflow-x:auto}
+  nav .logo{font-weight:900;color:var(--brand);white-space:nowrap;letter-spacing:.5px}
+  nav .logo span{color:var(--accent)}
+  nav .links{display:flex;gap:16px;font-size:13.5px;color:var(--ink-soft);white-space:nowrap}
+  nav .links a:hover{color:var(--brand-2)}
+
+  header.hero{background:linear-gradient(135deg,#0b2b3d 0%,#13546e 55%,#1d7a96 100%);color:#fff;padding:64px 0 52px;position:relative;overflow:hidden}
+  header.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(200,16,46,.3),transparent 70%)}
+  .hero .tag{display:inline-block;font-size:13px;letter-spacing:2px;text-transform:uppercase;background:rgba(255,255,255,.14);padding:5px 14px;border-radius:20px;margin-bottom:20px}
+  .hero h1{font-family:"Noto Serif SC",serif;font-size:clamp(26px,4vw,40px);line-height:1.3;margin-bottom:16px;max-width:840px}
+  .hero p.lead{font-size:16px;color:#d7e9ef;max-width:740px;margin-bottom:26px}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:10px 26px;font-size:13.5px;color:#cfe4ea}
+  .hero .meta b{color:#fff}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:-34px auto 0;position:relative;z-index:2}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .stat .num{font-size:28px;font-weight:900;color:var(--brand)}
+  .stat .num em{font-style:normal;font-size:14px;color:var(--muted);font-weight:500}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:4px}
+
+  section{padding:46px 0 8px}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:20px}
+  .sec-head .no{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px}
+  .sec-head h2{font-family:"Noto Serif SC",serif;font-size:clamp(20px,2.6vw,26px);color:var(--brand)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:var(--shadow);margin-bottom:22px}
+  .card h3{font-size:16.5px;color:var(--brand);margin:18px 0 10px}
+  .card h3:first-child{margin-top:0}
+  .card p{color:var(--ink-soft);margin-bottom:12px}
+  .card ul{margin:0 0 12px 20px;color:var(--ink-soft)}
+  .card li{margin-bottom:8px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff}
+  th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#eaf3f6;color:var(--brand);font-weight:700;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .rpn{font-weight:700;white-space:nowrap}
+  .r-h{color:var(--bad)} .r-m{color:var(--warn)} .r-l{color:var(--ok)}
+
+  .note{border-left:4px solid var(--brand-2);background:#ecf5f8;border-radius:0 12px 12px 0;padding:16px 18px;margin:16px 0;color:var(--ink-soft);font-size:14px}
+  .note.warn{border-color:var(--warn);background:#fdf6ec}
+  .note b{color:var(--brand)}
+
+  /* 系统边界 */
+  .boundary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .bcol{border:1px dashed var(--line);border-radius:14px;padding:16px;background:#fafdfe}
+  .bcol h4{font-size:13px;color:var(--brand-2);margin-bottom:10px}
+  .chip{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-size:12.5px;margin:3px 4px 3px 0;color:var(--ink-soft)}
+
+  /* FTA 树 */
+  .fta{font-size:13.5px}
+  .fta .top{background:var(--accent);color:#fff;border-radius:12px;padding:14px 18px;font-weight:700;text-align:center;max-width:520px;margin:0 auto}
+  .fta .op{text-align:center;font-weight:700;color:var(--brand-2);margin:10px 0}
+  .fta .mids{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
+  .fta .mid{background:#fff;border:1px solid var(--line);border-top:3px solid var(--brand-2);border-radius:12px;padding:14px}
+  .fta .mid h5{font-size:13.5px;color:var(--brand);margin-bottom:8px}
+  .fta .mid ul{margin-left:16px;font-size:12.5px;color:var(--muted)}
+  .fta .mid li{margin-bottom:5px}
+
+  /* 风险矩阵 */
+  .matrix{display:grid;grid-template-columns:64px repeat(5,1fr);gap:6px;max-width:640px;margin:10px 0}
+  .matrix .mh{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--brand)}
+  .matrix .cell{border-radius:10px;padding:14px 8px;text-align:center;font-size:12px;font-weight:700;color:#fff;min-height:52px}
+  .c-l{background:#86c99a} .c-m{background:#e8b35c} .c-h{background:#d97a52} .c-x{background:#b91c1c}
+  .matrix .axis-y{writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+  .legend{display:flex;gap:18px;font-size:12.5px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .legend span i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px}
+
+  /* 安全需求 */
+  .req{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .req .r{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px}
+  .req .r .rid{font-size:12px;font-weight:700;color:var(--accent)}
+  .req .r h4{font-size:14.5px;margin:6px 0 6px;color:var(--brand)}
+  .req .r p{font-size:12.5px;color:var(--muted)}
+
+  .gates{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .gate{background:#fff;border:1px solid var(--line);border-top:3px solid var(--brand-2);border-radius:14px;padding:18px}
+  .gate .g-no{font-size:12px;font-weight:700;color:var(--accent)}
+  .gate h4{font-size:14.5px;margin:6px 0 8px;color:var(--brand)}
+  .gate p{font-size:12.5px;color:var(--muted)}
+
+  ol.refs{margin-left:20px;color:var(--ink-soft);font-size:13px}
+  ol.refs li{margin-bottom:9px}
+
+  footer{margin-top:50px;background:var(--brand);color:#cfe4ea;padding:30px 0;font-size:13px}
+  footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+
+  @media(max-width:860px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .grid-2,.boundary,.req,.gates{grid-template-columns:1fr}
+    .fta .mids{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo">Roadster <span>Rocket</span> · 安全分析</div>
+    <div class="links">
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#scope">范围边界</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#framework">标准框架</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#hazop">危险识别</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#fmea">FMEA</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#fta">故障树</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#risk">风险矩阵</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#coph">压力专项</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#control">容错控制</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#people">人员安全</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#sotif">SOTIF</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#reg">监管身份</a>
+      <a href="file:///D:/%E6%A1%8C%E9%9D%A2/index%20(1).html#case">安全案例</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="tag">Automated Vehicles Safety · Assignment 2</span>
+    <h1>Tesla 第二代 Roadster Rocket：面向系统安全工程的全方位深度安全分析</h1>
+    <p class="lead">本报告承接作业一选定对象，结合系统安全工程方法，围绕压力系统、推力控制、人员与地面安全、SOTIF 与双重监管身份，开展危险识别、FMEA、故障树分析、风险定级与安全案例骨架构建。分析仅基于公开信息，未披露的安全机制不作臆测。</p>
+    <div class="meta">
+      <span>作者：<b>庄宇轩&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</b><span style="background-color: initial;">日期：</span><b style="background-color: initial;">2026-11-23</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="num">4<em> 大</em></div><div class="lbl">风险域：压力 / 控制 / 人员 / 监管</div></div>
+    <div class="stat"><div class="num">14<em> 项</em></div><div class="lbl">FMEA 失效模式条目</div></div>
+    <div class="stat"><div class="num">5×5</div><div class="lbl">可能性—严重度风险矩阵</div></div>
+    <div class="stat"><div class="num">4<em> 条</em></div><div class="lbl">顶层安全目标 G1–G4</div></div>
+  </div>
+</div>
+
+<!-- 01 范围与边界 -->
+<section id="scope">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">01</span><h2>分析目标、范围与系统边界</h2></div>
+    <div class="card">
+      <h3>分析目标</h3>
+      <p>识别 Roadster Rocket 在演示、体验与潜在运行场景中的危险与失效路径，评估风险水平，提出可验证的安全需求与缓解措施，并指出现有公开证据下的残余风险与安全论证缺口。本报告不替代适航审定、碰撞试验或第三方独立安全审查。</p>
+      <h3>系统边界（依据公开信息重构）</h3>
+      <div class="boundary">
+        <div class="bcol">
+          <h4>车载系统（分析范围内）</h4>
+          <span class="chip">车身 / 座舱 / 约束系统</span>
+          <span class="chip">底盘 / 悬架</span>
+          <span class="chip">动力电池与电气</span>
+          <span class="chip">COPV 高压气瓶组</span>
+          <span class="chip">10 个冷气推力器</span>
+          <span class="chip">阀门 / 喷口 / 风扇</span>
+          <span class="chip">姿态感知与飞控</span>
+        </div>
+        <div class="bcol">
+          <h4>运行环境（外部接口）</h4>
+          <span class="chip">封闭场地 / 试验场</span>
+          <span class="chip">地面人员与观众区</span>
+          <span class="chip">气象与阵风</span>
+          <span class="chip">地面效应与障碍物</span>
+          <span class="chip">补气 / 检测作业区</span>
+          <span class="chip">遥控 / 演示操作人员</span>
+        </div>
+        <div class="bcol">
+          <h4>边界外（不臆测）</h4>
+          <span class="chip">未公开控制拓扑</span>
+          <span class="chip">冗余架构细节</span>
+          <span class="chip">气瓶压力等级</span>
+          <span class="chip">安全裕度数据</span>
+          <span class="chip">未披露试验记录</span>
+        </div>
+      </div>
+      <div class="note warn">关键前提：公开视频只能证明“演示条件下发生了受控抬升与姿态响应”。安全完整性等级、冗余独立性、可靠度与适航符合性均无公开证据，下文相关结论以“待验证缺口”而非“已具备能力”表述。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 标准框架 -->
+<section id="framework">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">02</span><h2>适用标准与安全工程框架</h2></div>
+    <div class="card">
+      <p>Roadster Rocket 同时携带高压气瓶、多个推力器、载人座舱与道路行驶功能，不能只按汽车或航空器其中一套逻辑设计。分析同时借鉴道路车辆功能安全、预期功能安全与航空器适航三类方法。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>标准 / 框架</th><th>关注点</th><th>在本案例中的作用</th></tr></thead>
+          <tbody>
+            <tr><td><b>ISO 26262</b> 道路车辆功能安全</td><td>E/E 系统故障导致的不合理风险；ASIL 等级分解、安全需求与验证</td><td>指导电气、控制与推力执行系统的故障安全论证与安全完整性分级</td></tr>
+            <tr><td><b>ISO 21448 (SOTIF)</b></td><td>无系统故障时，由功能不足、性能边界与可预见误用引起的风险</td><td>识别感知局限、模式误解、低空阵风、人员位置判断等非故障风险</td></tr>
+            <tr><td><b>ISO 34502</b> 场景安全评价框架</td><td>任务—场景—危险—控制措施—验证方法的场景化映射</td><td>组织倒置坡道、越障、围观、补气等极端场景的评价证据</td></tr>
+            <tr><td><b>EASA SC-VTOL</b></td><td>垂直起降航空器专用条件与符合性方法</td><td>对照航空器级失效概率、冗余与持续适航要求，衡量差距</td></tr>
+            <tr><td><b>FAA powered-lift / Part 103</b></td><td>动力升力航空器认证运行；超轻型航空器边界</td><td>判断监管归类与运行许可路径；目前未见任一类别正式批准证据</td></tr>
+            <tr><td>ARP4754A / ARP4761 思路</td><td>民用航空器开发过程与安全性评估（FHA / FTA / FMEA / CCA）</td><td>组织从功能危险评估到冗余与共因分析的安全性评估链条</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">标准不是“飞行汽车认证证书”，而是把危险、场景、性能限制与验证证据组织起来的方法。若仅在封闭场地完成表演，路径更接近试验 / 表演 / 特殊许可；若进入公共道路、开放空域或商业载客，软硬件要求将显著升级。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 危险识别 HAZOP -->
+<section id="hazop">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">03</span><h2>危险识别：能量源与 HAZOP 引导词分析</h2></div>
+    <div class="card">
+      <p>系统安全分析先识别可致害的能量源，再以 HAZOP 引导词（多 / 少 / 反向 / 非预期 / 缺失 / 早 / 晚）逐项排查功能偏离。本案例主要能量源包括：高压压缩气体能、动力电池电能、运动 / 动能、喷流与噪声能、重力势能。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>引导词</th><th>偏离的功能</th><th>可能危险状态</th><th>主要受影响对象</th></tr></thead>
+          <tbody>
+            <tr><td>多 / 过高</td><td>气瓶充注压力、推力指令、姿态角速度</td><td>超压、非预期强推力、姿态过激翻覆</td><td>乘员、结构、地面人员</td></tr>
+            <tr><td>少 / 不足</td><td>推力输出、补气量、制动 / 阻尼</td><td>升力不足坠落、落地冲击过大、控制裕度丧失</td><td>乘员</td></tr>
+            <tr><td>反向 / 不对称</td><td>推力方向、左右 / 前后推力分配</td><td>偏航 / 翻滚、非预期位移</td><td>乘员、周边人员与设施</td></tr>
+            <tr><td>非预期</td><td>推力器点火、模式切换、风扇启动</td><td>地面非预期抬升、误闯入危险区</td><td>地面人员、车辆</td></tr>
+            <tr><td>缺失</td><td>阀门开启、传感器信号、控制指令、中止指令</td><td>推力丧失、姿态估计错误、无法终止动作</td><td>乘员、地面人员</td></tr>
+            <tr><td>早 / 晚 / 卡滞</td><td>阀门启闭、推力时序、模式过渡</td><td>时序错误、执行器卡滞、模态衔接失控</td><td>乘员、结构</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>危险域清单</h3>
+      <ul>
+        <li><b>压力系统危险：</b>爆破、泄漏、冲击损伤、应力破裂、过热失强、过充。</li>
+        <li><b>推力与控制危险：</b>姿态失控、非预期抬升、推力不对称、执行器卡滞、传感器冲突、通信丢失。</li>
+        <li><b>人员安全危险：</b>乘员碰撞 / 翻覆伤害、地面人员被撞击、喷流与噪声伤害、应急撤离受阻。</li>
+        <li><b>运行与监管危险：</b>道路不可合法行驶、航空运行未获许可、人员无资质操作、场地隔离不足。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 04 FMEA -->
+<section id="fmea">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">04</span><h2>失效模式与影响分析（FMEA）</h2></div>
+    <div class="card">
+      <p>评分采用 1–5 分：严重度 S（1 轻微 → 5 灾难）、发生度 O（1 极低 → 5 高频）、探测度 D（1 易探测 → 5 难探测）；RPN = S × O × D。下表为基于公开信息的教学性初评，不代表实测可靠度；发生度与探测度需以设计分析与试验数据替换。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>子系统</th><th>失效模式</th><th>后果</th><th>S</th><th>O</th><th>D</th><th>RPN</th><th>缓解 / 验证措施</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>COPV 气瓶</td><td>纤维断裂 / 应力破裂</td><td>高压气体泄漏、气瓶爆破，碎片与冲击波</td><td>5</td><td>2</td><td>4</td><td class="rpn r-h">40</td>
+              <td>爆破裕度与循环寿命验证；定期无损检测；泄压与隔离设计；材料疲劳监控</td>
+            </tr>
+            <tr>
+              <td>COPV 气瓶</td><td>碰撞 / 石击导致冲击损伤</td><td>内衬开裂、后期缓慢泄漏</td><td>5</td><td>3</td><td>3</td><td class="rpn r-h">45</td>
+              <td>底部与侧部防护结构；损伤检查规程；碰撞后禁用与复检流程</td>
+            </tr>
+            <tr>
+              <td>阀门 / 喷口</td><td>阀门卡滞（常开或常闭）</td><td>非预期推力或该路推力不足</td><td>4</td><td>3</td><td>3</td><td class="rpn r-m">36</td>
+              <td>冗余阀位检测；卡滞诊断；故障注入试验；推力重构策略</td>
+            </tr>
+            <tr>
+              <td>推力器</td><td>单个推力器失效 / 推力不足</td><td>推力不对称、姿态扰动</td><td>4</td><td>3</td><td>3</td><td class="rpn r-m">36</td>
+              <td>多推力器冗余布置；剩余推力分配重构；明确降级飞行包线</td>
+            </tr>
+            <tr>
+              <td>飞控 / 算法</td><td>推力分配或姿态解算错误</td><td>姿态失控、轨迹偏离</td><td>5</td><td>2</td><td>4</td><td class="rpn r-h">40</td>
+              <td>硬件在环与故障注入测试；独立监控通道；关键逻辑评审 / 形式化验证</td>
+            </tr>
+            <tr>
+              <td>姿态感知</td><td>传感器失效或多源冲突</td><td>姿态估计错误，控制指令失真</td><td>5</td><td>2</td><td>4</td><td class="rpn r-h">40</td>
+              <td>传感器冗余与交叉校验；一致性仲裁；失效后进入安全姿态模式</td>
+            </tr>
+            <tr>
+              <td>补气 / 充注</td><td>过充或压力异常</td><td>超压风险、气瓶损伤</td><td>4</td><td>2</td><td>4</td><td class="rpn r-m">32</td>
+              <td>过压保护与限充；充注联锁；作业期间车辆锁定与人员撤离</td>
+            </tr>
+            <tr>
+              <td>动力电池 / 电气</td><td>电池或供电故障</td><td>控制或推力执行丧失</td><td>4</td><td>2</td><td>3</td><td class="rpn r-m">24</td>
+              <td>按 ISO 26262 分解 ASIL；断电保护；关键回路冗余与断电安全状态</td>
+            </tr>
+            <tr>
+              <td>运行模式</td><td>非授权抬升 / 模式误用</td><td>地面人员暴露于推力与运动风险</td><td>5</td><td>3</td><td>3</td><td class="rpn r-h">45</td>
+              <td>抬升互锁与授权确认；场地隔离；模式状态清晰提示；操作资质管理</td>
+            </tr>
+            <tr>
+              <td>场地隔离</td><td>地面人员进入危险区</td><td>被车体、喷流或碎片撞击</td><td>5</td><td>3</td><td>4</td><td class="rpn r-h">60</td>
+              <td>物理隔离 + 电子围栏；门禁联锁；观众区净空；现场监护与广播</td>
+            </tr>
+            <tr>
+              <td>喷流 / 噪声</td><td>高速喷射流或宽频噪声超阈值</td><td>听力损伤、吹倒 / 抛射物伤害</td><td>3</td><td>3</td><td>3</td><td class="rpn r-m">27</td>
+              <td>安全距离与防护；噪声频谱评估；佩戴防护；喷射方向避开人员区</td>
+            </tr>
+            <tr>
+              <td>乘员约束 / 结构</td><td>着陆冲击或翻覆</td><td>乘员碰撞伤害</td><td>4</td><td>3</td><td>3</td><td class="rpn r-m">36</td>
+              <td>约束系统与吸能结构；着陆包线限制；翻滚保护；应急撤离通道</td>
+            </tr>
+            <tr>
+              <td>热环境</td><td>外部火灾或气瓶受热</td><td>复合材料失强、气瓶爆裂</td><td>5</td><td>2</td><td>4</td><td class="rpn r-h">40</td>
+              <td>热屏障与隔热；消防配置；应急泄压策略；受热后强制退役检查</td>
+            </tr>
+            <tr>
+              <td>通信 / 遥控</td><td>控制链路丢失</td><td>无法中止或修正动作</td><td>4</td><td>2</td><td>4</td><td class="rpn r-m">32</td>
+              <td>独立于链路的机载中止逻辑；失效安全姿态；预设安全落地区域</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note warn">高 RPN 条目集中在：地面人员侵入危险区、COPV 损伤 / 破裂、非授权抬升、飞控与感知失效。这些项也是后续安全案例与试验验证应优先覆盖的对象。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 FTA -->
+<section id="fta">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">05</span><h2>故障树分析（FTA）：顶事件“空中姿态失控并撞击地面 / 人员”</h2></div>
+    <div class="card fta">
+      <div class="top">顶事件 TE：车辆空中姿态失控，撞击地面、设施或地面人员</div>
+      <div class="op">OR（任一中间事件发生，且未能被故障安全机制阻止）</div>
+      <div class="mids">
+        <div class="mid">
+          <h5>M1 推力 / 升力异常</h5>
+          <ul>
+            <li>推力不足或总冲量耗尽</li>
+            <li>多路推力不对称</li>
+            <li>阀门卡滞 / 喷口堵塞</li>
+            <li>非预期推力点火</li>
+          </ul>
+        </div>
+        <div class="mid">
+          <h5>M2 姿态控制失效</h5>
+          <ul>
+            <li>姿态传感器失效 / 冲突</li>
+            <li>推力分配解算错误</li>
+            <li>执行器响应超限</li>
+            <li>链路丢失且无独立中止</li>
+          </ul>
+        </div>
+        <div class="mid">
+          <h5>M3 压力 / 能量系统失效</h5>
+          <ul>
+            <li>COPV 爆破 / 大量泄漏</li>
+            <li>过充 / 超压</li>
+            <li>受热失强</li>
+            <li>补气不足导致推力断供</li>
+          </ul>
+        </div>
+        <div class="mid">
+          <h5>M4 外部诱发因素</h5>
+          <ul>
+            <li>阵风 / 地面效应突变</li>
+            <li>障碍物净空不足</li>
+            <li>人员侵入危险区</li>
+            <li>模式误用 / 非授权抬升</li>
+          </ul>
+        </div>
+      </div>
+      <h3>逻辑说明与共因关注</h3>
+      <ul>
+        <li>M1 与 M2 常耦合出现：推力不对称会先扰动姿态，若控制重构失败才发展为失控；分析时需区分“可被重构吸收的扰动”与“超出降级包线的失效”。</li>
+        <li>共因失效（CCA）关注：共用气源导致多路推力同时衰减；同一供电 / 计算通道影响多个推力器；传感器安装与算法共因偏差。</li>
+        <li>顶事件能否发生，还取决于屏障层是否有效：抬升互锁、场地隔离、故障安全模式、应急泄压与地面救援。FTA 应把屏障作为抑制事件纳入后续定量分析。</li>
+      </ul>
+      <div class="note">现有公开材料未提供各底事件发生概率、冗余独立性与共因系数，因此本树为定性结构树；定量最小割集与概率排序需待设计数据与试验记录补充。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 风险矩阵 -->
+<section id="risk">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">06</span><h2>风险评估矩阵与定级</h2></div>
+    <div class="card">
+      <p>以严重度（纵轴，1–5）与可能性（横轴，1–5）构建 5×5 矩阵。风险等级分为：低（绿）、中（黄）、高（橙）、不可接受（红）。定级为初始风险（缓解前），缓解后应重新评估残余风险。</p>
+      <div class="matrix">
+        <div class="axis-y">严重度 →</div>
+        <div class="mh">1</div><div class="mh">2</div><div class="mh">3</div><div class="mh">4</div><div class="mh">5</div>
+
+        <div class="mh">5</div>
+        <div class="cell c-m">中</div><div class="cell c-h">高</div><div class="cell c-x">不可接受</div><div class="cell c-x">不可接受</div><div class="cell c-x">不可接受</div>
+
+        <div class="mh">4</div>
+        <div class="cell c-l">低</div><div class="cell c-m">中</div><div class="cell c-h">高</div><div class="cell c-x">不可接受</div><div class="cell c-x">不可接受</div>
+
+        <div class="mh">3</div>
+        <div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-m">中</div><div class="cell c-h">高</div><div class="cell c-h">高</div>
+
+        <div class="mh">2</div>
+        <div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-m">中</div><div class="cell c-m">中</div>
+
+        <div class="mh">1</div>
+        <div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-l">低</div><div class="cell c-m">中</div>
+
+        <div></div><div class="mh" style="grid-column:span 5">可能性 →</div>
+      </div>
+      <div class="legend">
+        <span><i style="background:#86c99a"></i>低：可接受，常规监控</span>
+        <span><i style="background:#e8b35c"></i>中：需缓解并跟踪</span>
+        <span><i style="background:#d97a52"></i>高：必须采取措施降至中 / 低</span>
+        <span><i style="background:#b91c1c"></i>不可接受：风险降低前不得载人 / 开放运行</span>
+      </div>
+      <h3>主要风险条目定级（初始风险）</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>风险条目</th><th>严重度</th><th>可能性</th><th>初始等级</th><th>处置原则</th></tr></thead>
+          <tbody>
+            <tr><td>COPV 爆破 / 碎裂伤及地面人员</td><td>5</td><td>2</td><td class="rpn r-h">高</td><td>压力系统证据齐备前，限制充装与运行边界</td></tr>
+            <tr><td>姿态失控撞击观众区</td><td>5</td><td>2–3</td><td class="rpn r-h">高 / 不可接受</td><td>隔离区 + 故障安全模式 + 降级包线论证</td></tr>
+            <tr><td>单个推力器失效导致不对称</td><td>4</td><td>3</td><td class="rpn r-m">中</td><td>冗余与重构分配验证，纳入故障注入试验</td></tr>
+            <tr><td>非授权 / 误用抬升</td><td>5</td><td>3</td><td class="rpn r-h">高</td><td>互锁、授权流程、模式状态可见性改造</td></tr>
+            <tr><td>喷流 / 噪声伤害周边人员</td><td>3</td><td>3</td><td class="rpn r-m">中</td><td>距离限制、方向控制、噪声与抛射物评估</td></tr>
+            <tr><td>着陆冲击 / 翻覆伤及乘员</td><td>4</td><td>3</td><td class="rpn r-m">中</td><td>约束与吸能结构验证，限制着陆状态包线</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 COPV 专项 -->
+<section id="coph">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">07</span><h2>压力系统（COPV）专项安全分析</h2></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>失效机理</h3>
+        <ul>
+          <li><b>复合材料损伤：</b>纤维断裂、基体开裂、界面脱粘、分层与局部冲击损伤，会逐步降低剩余强度。</li>
+          <li><b>应力破裂：</b>长期承压与重复充放下，复合材料可能发生延迟失效。</li>
+          <li><b>热—结构耦合：</b>气体快速膨胀吸热形成低温区；外部火灾又会降低树脂与纤维性能。</li>
+          <li><b>道路环境载荷：</b>石击、涉水、盐雾、振动与维修误操作，是传统航空气瓶维护程序未完全覆盖的场景。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>必须验证的安全证据（当前公开缺口）</h3>
+        <ul>
+          <li>工作压力、爆破压力与爆破裕度；温度适用范围。</li>
+          <li>充放循环寿命、老化与定期检测方法（NDI）。</li>
+          <li>碰撞、跌落与冲击损伤后的剩余强度判据。</li>
+          <li>泄漏检测、应急泄压路径与隔离阀逻辑。</li>
+          <li>起火 / 受热场景下的响应时间与退役判据。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="note warn">布置在乘员舱、底盘与车身空隙中的 COPV，设计问题已从“能装多少气”升级为“如何证明在碰撞、热、疲劳、制造缺陷与重复充放条件下不会形成不可接受风险”。在上述证据缺失时，不应给出可靠性或安全性结论。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 08 容错控制 -->
+<section id="control">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">08</span><h2>推力控制与冗余容错</h2></div>
+    <div class="card">
+      <h3>控制链条与失效关注点</h3>
+      <ul>
+        <li><b>姿态估计：</b>多源感知（惯性、视觉 / 其他）交叉校验，识别传感器失效与冲突；缺乏冗余时，单传感器偏差即可误导控制。</li>
+        <li><b>推力分配：</b>依据质心、气动中心、剩余气量与姿态误差实时分配多路推力；部分推力器失效后需重新分配剩余控制能力。</li>
+        <li><b>容错降级：</b>明确各失效组合下的降级包线（可维持姿态 / 可受控落地 / 需中止动作），避免在超出能力时继续执行任务。</li>
+        <li><b>独立监控与中止：</b>应有独立于主控的监控通道与机载中止逻辑，在链路丢失、指令异常或状态越界时触发安全状态。</li>
+      </ul>
+      <h3>待验证能力（演示视频无法证明）</h3>
+      <p>闭环抗风能力、故障重构、软硬件独立性、传感器交叉校验、执行器卡滞检测与任务中止能力，是从“表演可控”走向“运行可信”的分界线。建议通过故障注入试验、硬件在环仿真与可重复外场试验逐项验证，并公开失效后的姿态响应与着陆结果。</p>
+    </div>
+  </div>
+</section>
+
+<!-- 09 人员安全 -->
+<section id="people">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">09</span><h2>乘员与地面人员安全</h2></div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>乘员安全</h3>
+        <ul>
+          <li>约束系统：适合高动态姿态动作的安全带 / 头盔 / 束缚方案，限制相对位移。</li>
+          <li>结构与吸能：座舱翻滚保护、着陆冲击吸能、座舱生存空间保持。</li>
+          <li>状态告知：模式、姿态、剩余气量与中止条件对操作人员 / 乘员清晰可见。</li>
+          <li>应急撤离：出口可达、解脱快速、遇险后撤离路径与救援方案明确。</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>地面人员与第三方安全</h3>
+        <ul>
+          <li>隔离区：按推力喷流、飞溅物与可能坠落范围划定净空区，物理围挡 + 电子围栏。</li>
+          <li>喷流与噪声：喷射方向避开人员区；评估噪声频谱、频次与短时脉冲暴露。</li>
+          <li>侵入联锁：人员进入危险区时禁止抬升 / 自动进入安全状态。</li>
+          <li>运行组织：操作人员资质、天气窗口、现场监护、消防与残骸处置预案。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="note">公开表述中“安全不是 Roadster 的首要目标”属于营销语境；工程语境下，低优先级不等于可以缺少最低安全论证。任何载人飞行演示都必须定义人员隔离、故障处置与事故后果边界。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 SOTIF -->
+<section id="sotif">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">10</span><h2>SOTIF 与可预见误用：场景—危险—控制—验证映射</h2></div>
+    <div class="card">
+      <p>许多风险不一定来自硬件故障，而可能来自环境感知不足、驾驶员对模式边界的误解、低空阵风、地面人员位置判断、自动补气状态错误，或系统在复杂地面条件下错误触发。按 ISO 21448 识别这些可预见的功能不足与合理误用，并按 ISO 34502 建立场景化评价。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>任务 / 场景</th><th>潜在功能不足 / 误用</th><th>危险</th><th>控制措施</th><th>验证方法</th></tr></thead>
+          <tbody>
+            <tr><td>倒置坡道越障演示</td><td>低附着、极端姿态与非线性气动叠加；操作人员对边界判断不足</td><td>姿态失控、冲出路径</td><td>预设路径与净空；姿态包线限制；场地缓冲</td><td>场景化试验；边界工况回放；HIL 仿真</td></tr>
+            <tr><td>围观 / 活动现场抬升</td><td>观众位置判断偏差；非授权靠近</td><td>撞击 / 喷流伤害第三方</td><td>隔离区与围栏；侵入联锁；现场监护</td><td>侵入场景测试；隔离距离复核；应急预案演练</td></tr>
+            <tr><td>阵风 / 地面效应突变</td><td>抗风包线未公开；近地面回流与侧向力估计不足</td><td>偏移、下沉、着陆偏差</td><td>气象窗口限制；地面效应预留裕度</td><td>不同高度 / 风速下姿态带宽与误差测试</td></tr>
+            <tr><td>补气 / 维护作业</td><td>过充、状态误判、维修误操作</td><td>超压、泄漏、意外动作</td><td>充注联锁与锁定；作业规程；人员撤离</td><td>充注流程评审；过压保护验证；维修误用情景测试</td></tr>
+            <tr><td>模式切换（道路 / 演示）</td><td>驾驶员误解当前模式；状态提示不清</td><td>在错误模式下触发推力</td><td>模式互锁；状态显著提示；授权确认</td><td>人因误用试验；模式状态可见性评审</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 监管身份 -->
+<section id="reg">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">11</span><h2>双重监管身份分析</h2></div>
+    <div class="card">
+      <p>道路车辆安全围绕碰撞、制动、电池、电气与功能安全展开；航空安全则要求更严格的失效概率、冗余架构、持续适航与运行控制。Roadster Rocket 横跨两套体系，二者的事故单位、暴露人群与可接受概率不同，不能用一句“航空级安全”简单合并。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>监管维度</th><th>道路车辆侧要求</th><th>航空器侧要求</th><th>当前公开状态</th></tr></thead>
+          <tbody>
+            <tr><td>身份归类</td><td>机动车公告 / 豁免；碰撞与电磁等准入</td><td>动力升力 / 垂直起降 / 超轻型等类别认定</td><td>未见正式归类与批准证据</td></tr>
+            <tr><td>设计安全</td><td>ISO 26262 功能安全；碰撞与电池安全</td><td>SC-VTOL / powered-lift 失效概率与冗余</td><td>安全论证未公开</td></tr>
+            <tr><td>运行许可</td><td>公共道路行驶资格</td><td>空域使用、运行人与机组资质</td><td>未取得公开运行许可</td></tr>
+            <tr><td>持续安全</td><td>召回、检测与维修体系</td><td>持续适航、维修大纲与记录</td><td>维护 / 检测体系未披露</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">若仅在封闭场地完成表演，监管路径可能更接近试验、表演或特殊许可；若进入公共道路、开放空域或商业载客，软硬件、人员资质与运行体系要求将显著升级。</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 安全案例 -->
+<section id="case">
+  <div class="wrap">
+    <div class="sec-head"><span class="no">12</span><h2>安全案例骨架与关键安全需求</h2></div>
+    <div class="card">
+      <p>安全案例应在概念阶段即建立骨架，而不是产品定型后补文件。它至少包括：任务与运行环境、系统边界、危险清单、风险接受原则、关键安全需求、独立验证方法与残余风险说明。</p>
+      <h3>顶层安全目标</h3>
+      <div class="req">
+        <div class="r"><div class="rid">G1</div><h4>防止非受控离地</h4><p>仅在授权模式、隔离条件与安全包线内允许抬升；任何非授权 / 越界触发被互锁阻止。</p></div>
+        <div class="r"><div class="rid">G2</div><h4>单点失效后可安全落地</h4><p>任一推力器、阀门或感知单点失效后，剩余控制能力足以保持姿态并受控落地。</p></div>
+        <div class="r"><div class="rid">G3</div><h4>压力系统不发生不可接受爆破</h4><p>COPV 在设计寿命、碰撞、热与充放循环条件下满足爆破裕度与泄漏可控要求。</p></div>
+        <div class="r"><div class="rid">G4</div><h4>地面与乘员风险可控</h4><p>隔离区、约束系统、喷流噪声控制与应急撤离，使第三方与乘员风险降至可接受水平。</p></div>
+      </div>
+      <h3>关键安全需求（示例）与验证证据对应</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>安全需求</th><th>对应目标</th><th>验证方法</th><th>证据状态</th></tr></thead>
+          <tbody>
+            <tr><td>抬升前完成授权确认、场地清场与互锁检查</td><td>G1 / G4</td><td>联锁设计评审 + 侵入 / 误用场景测试</td><td>未公开</td></tr>
+            <tr><td>推力器 / 阀门失效后自动重构分配并进入降级包线</td><td>G2</td><td>故障注入、HIL、外场失效试验</td><td>未公开</td></tr>
+            <tr><td>COPV 爆破裕度、循环寿命与无损检测规程</td><td>G3</td><td>型式试验、疲劳试验、NDI 大纲</td><td>未公开</td></tr>
+            <tr><td>独立监控通道与机载中止逻辑</td><td>G2 / G1</td><td>冗余与共因分析、中止逻辑测试</td><td>未公开</td></tr>
+            <tr><td>地面隔离距离、喷流方向与噪声阈值复核</td><td>G4</td><td>距离 / 噪声测量、抛射物评估</td><td>未公开</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>残余风险与未决项</h3>
+      <ul>
+        <li>压力等级、爆破裕度、循环寿命与检测方法未披露，G3 暂无论证基础。</li>
+        <li>冗余架构、故障重构与独立监控未见公开说明，G2 无法评估。</li>
+        <li>无适航 / 道路准入与运行许可证据，载人开放运行的合法性前提不成立。</li>
+        <li>在上述证据补齐前，建议仅限受控场地、无围观暴露的工程试验状态。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 13 安全门槛 -->
+<section>
+  <div class="wrap">
+    <div class="sec-head"><span class="no">13</span><h2>安全 Go / No-Go 门槛与建议</h2></div>
+    <div class="card">
+      <div class="gates">
+        <div class="gate"><div class="g-no">S-Gate 1</div><h4>危险与场景闭环</h4><p>完成 FHA / HAZOP、场景清单与风险接受原则，高风险条目均有缓解措施。</p></div>
+        <div class="gate"><div class="g-no">S-Gate 2</div><h4>压力与结构证据</h4><p>COPV 爆破裕度、疲劳、碰撞、热与泄压证据齐备并通过评审。</p></div>
+        <div class="gate"><div class="g-no">S-Gate 3</div><h4>故障安全验证</h4><p>单点 / 多点失效注入、降级控制、冗余与共因分析、中止逻辑验证通过。</p></div>
+        <div class="gate"><div class="g-no">S-Gate 4</div><h4>监管与运行闭环</h4><p>明确道路 / 航空身份类别、运行许可、人员资质、保险与应急体系。</p></div>
+      </div>
+      <div class="note warn">建议结论：在 S-Gate 1–4 至少部分公开证据之前，Roadster Rocket 应被视为“受控场地内的工程演示原型”，不具备载人开放运行或公共道路 / 空域使用的安全与监管基础。保留不确定性，比用愿望填补安全空白更专业。</div>
+    </div>
+    <div class="card">
+      <div class="sec-head" style="margin-bottom:10px"><span class="no">14</span><h2>参考标准与文献（节选）</h2></div>
+      <ol class="refs">
+        <li>ISO 26262:2018 Road vehicles — Functional safety[S]. Geneva: ISO, 2018.</li>
+        <li>ISO 21448:2022 Road vehicles — Safety of the intended functionality[S]. Geneva: ISO, 2022.</li>
+        <li>ISO 34502:2022 Road vehicles — Test scenarios for automated driving systems — Scenario based safety evaluation framework[S]. Geneva: ISO, 2022.</li>
+        <li>EASA. Special Condition for Small Category VTOL (SC-VTOL) and Means of Compliance[S]. 2019.</li>
+        <li>FAA. Integration of Powered-Lift: Pilot Certification and Operations, Final Rule[EB/OL]. 2024.</li>
+        <li>FAA. 14 CFR Part 103 — Ultralight Vehicles[EB/OL]. eCFR.</li>
+        <li>SAE ARP4754A / ARP4761. Guidelines for Development of Civil Aircraft and Systems; Safety Assessment Process[R]. SAE International.</li>
+        <li>SCHRAGE D, et al. Functional Safety Management Approach for Certification of Evolving eVTOL Air Taxi Concepts[C]. VFS 74th Annual Forum, 2018.</li>
+        <li>GATTANI S. eVTOL Certification — Regulatory Approach and Safety Considerations[C]. VFS First Int. Conf. on AAM Systems, 2023.</li>
+        <li>THIONNET A, et al. Intrinsic Mechanisms Limiting the Use of Carbon Fiber Composite Pressure Vessels[J]. J. Pressure Vessel Technology, 2016, 138(6).</li>
+        <li>SHI X, et al. Nonlinear Control of Autonomous Flying Cars with Wings and Distributed Electric Propulsion[C]. IEEE CDC, 2018: 5326-5333.</li>
+        <li>TESLA. The Ramp | Roadster[EB/OL]. YouTube, 2026-10-15；Tesla X 推力器技术帖, 2026-10-16.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><br></div>
+    <div>庄宇轩 · 2026-11-23</div>
+  </div>
+</footer>
+
+
+
+</body></html>
